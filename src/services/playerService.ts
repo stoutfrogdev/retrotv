@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { ScheduleEntry, DaySchedule } from '../types';
-import { format, parseISO, parse, setDayOfYear, startOfYear } from 'date-fns';
+import { format, setDayOfYear, startOfYear } from 'date-fns';
 
 export class PlayerService {
   private schedules: Map<string, Map<string, DaySchedule>>;
@@ -117,7 +117,7 @@ export class PlayerService {
 
     // Debug: show first few entries and current time
     console.error(`[getCurrentEntry] No entry found playing at ${now.toString()} (${now.toISOString()})`);
-    console.error(`First 3 entries:`);
+    console.error('First 3 entries:');
     daySchedule.entries.slice(0, 3).forEach(e => {
       console.error(`  ${e.startTime.toString()} - ${e.endTime.toString()}: ${e.mediaFile.filename}`);
     });

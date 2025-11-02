@@ -1,5 +1,4 @@
 import { 
-  Channel, 
   MediaFile, 
   ScheduleEntry, 
   DaySchedule, 
@@ -8,12 +7,13 @@ import {
 import { 
   startOfYear, 
   addDays, 
-  addMinutes, 
   format, 
   isWithinInterval, 
   parse,
   getDayOfYear
 } from 'date-fns';
+import * as fs from 'fs';
+import * as path from 'path';
 
 export class ScheduleGenerator {
   private config: Config;
@@ -234,9 +234,6 @@ export class ScheduleGenerator {
   }
 
   saveScheduleToFile(schedule: DaySchedule[], outputPath: string): void {
-    const fs = require('fs');
-    const path = require('path');
-
     // Ensure directory exists
     const dir = path.dirname(outputPath);
     if (!fs.existsSync(dir)) {
@@ -263,8 +260,6 @@ export class ScheduleGenerator {
   }
 
   static loadScheduleFromFile(filePath: string): DaySchedule[] {
-    const fs = require('fs');
-    
     if (!fs.existsSync(filePath)) {
       throw new Error(`Schedule file not found: ${filePath}`);
     }

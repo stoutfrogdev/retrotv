@@ -13,6 +13,8 @@ class RetroTVClient {
         this.syncInterval = null;
         this.scheduleUpdateInterval = null;
         this.isDevMode = this.detectDevMode();
+        this.inTechnicalDifficulties = false;
+        this.technicalDifficultiesRetryTimer = null;
         
         this.init();
     }
@@ -42,6 +44,38 @@ class RetroTVClient {
                     this.debugPanel.classList.toggle('collapsed');
                 });
             }
+            
+            // Set up audio monitoring
+            this.setupAudioMonitoring();
+        }
+    }
+    
+    setupAudioMonitoring() {
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const source = audioContext.createMediaElementSource(this.videoPlayer);
+            const analyser = audioContext.createAnalyser();
+            analyser.fftSize = 256;
+            
+            source.connect(analyser);
+            analyser.connect(audioContext.destination);
+            
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+            
+            // Check audio level every second
+            setInterval(() => {
+                if (this.videoPlayer.paused || this.videoPlayer.ended) return;
+                
+                analyser.getByteFrequencyData(dataArray);
+                const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+                
+                // If audio level is consistently very low (< 1) for playing video, log warning
+                if (average < 1 && this.videoPlayer.currentTime > 1) {
+                    console.warn('No audio detected - possible silent video or audio issue');
+                }
+            }, 1000);
+        } catch (error) {
+            console.warn('Audio monitoring not available:', error);
         }
     }
     
@@ -106,6 +140,25 @@ class RetroTVClient {
             
             // Store current entry ID for change detection
             this.currentEntryId = syncData.entry.id;
+            
+            // Set up error handlers BEFORE loading video
+            this.videoPlayer.onerror = (e) => {
+                if (this.inTechnicalDifficulties) {
+                    console.error('Error during technical difficulties, will retry channel load');
+                    return;
+                }
+                
+                console.error('Video error:', e);
+                const errorMsg = this.videoPlayer.error?.message || 'Unknown error';
+                console.log('Video src that failed:', this.videoPlayer.src);
+                
+                if (this.isDevMode) {
+                    this.debugCurrent.innerHTML = `<div style="color: #ff6b6b;">Video Error: ${errorMsg}</div>`;
+                }
+                
+                // Show technical difficulties
+                this.showTechnicalDifficulties(`Video error: ${errorMsg}`);
+            };
 
             // Set video source with cache busting
             const cacheBuster = Date.now();
@@ -174,6 +227,42 @@ class RetroTVClient {
             this.videoPlayer.onended = async () => {
                 console.log('Video ended, loading next content...');
                 await this.loadChannelStream(channelId);
+            };
+            
+            // Monitor for stalled/frozen video
+            this.videoPlayer.onstalled = () => {
+                console.warn('Video playback stalled');
+            };
+            
+            // Detect if video appears stuck (no progress for 3 seconds)
+            let lastTime = 0;
+            let stuckCount = 0;
+            this.videoPlayer.ontimeupdate = () => {
+                if (!this.videoPlayer.duration) return;
+                
+                const currentTime = this.videoPlayer.currentTime;
+                
+                // Check if video is stuck
+                if (currentTime === lastTime && !this.videoPlayer.paused && !this.videoPlayer.ended) {
+                    stuckCount++;
+                    if (stuckCount > 3) {
+                        console.error('Video appears frozen');
+                        this.showTechnicalDifficulties('Video playback frozen');
+                        stuckCount = 0;
+                    }
+                } else {
+                    stuckCount = 0;
+                    lastTime = currentTime;
+                }
+                
+                // Pre-load next content when 3 seconds remain
+                const timeRemaining = this.videoPlayer.duration - currentTime;
+                if (timeRemaining <= 3 && timeRemaining > 2.5) {
+                    console.log('Preparing next content...');
+                    fetch(`/api/channel/${channelId}/sync`).catch(err => 
+                        console.warn('Prefetch failed:', err)
+                    );
+                }
             };
             
             // Also check when video is about to end (5 seconds before)
@@ -263,9 +352,11 @@ class RetroTVClient {
                 const episodeTitle = entry.mediaFile?.episodeTitle || 'Unknown Episode';
                 const season = entry.mediaFile?.season || '?';
                 const episode = entry.mediaFile?.episode || '?';
+                const airDate = entry.mediaFile?.airDate || 'Unknown';
                 titleHtml = `
                     <div><strong>Series:</strong> ${seriesName}</div>
                     <div><strong>Episode:</strong> S${season}E${episode} - ${episodeTitle}</div>
+                    <div><strong>Air Date:</strong> ${airDate}</div>
                 `;
             }
             
@@ -340,9 +431,13 @@ class RetroTVClient {
             this.scheduleUpdateInterval = setInterval(() => {
                 this.updateDebugPanel();
             }, 10000);
+            
+            // In dev mode, don't check for time drift - just let videos play sequentially
+            console.log('Dev mode: Time drift checking disabled');
+            return;
         }
 
-        // Sync with server every 30 seconds to ensure playback is in sync
+        // Sync with server every 30 seconds to ensure playback is in sync (production only)
         this.syncInterval = setInterval(async () => {
             if (!this.currentChannel) return;
 
@@ -385,6 +480,79 @@ class RetroTVClient {
                 console.error('Sync error:', error);
             }
         }, 30000);
+    }
+
+    async showTechnicalDifficulties(reason) {
+        if (this.inTechnicalDifficulties) return;
+        
+        console.error(`Technical difficulties: ${reason}`);
+        this.inTechnicalDifficulties = true;
+        
+        // Stop sync intervals to prevent interference
+        if (this.syncInterval) {
+            clearInterval(this.syncInterval);
+            this.syncInterval = null;
+        }
+        if (this.scheduleUpdateInterval) {
+            clearInterval(this.scheduleUpdateInterval);
+            this.scheduleUpdateInterval = null;
+        }
+        
+        // Stop current playback and clear all handlers
+        this.videoPlayer.pause();
+        this.videoPlayer.src = '';
+        this.videoPlayer.onerror = null;
+        this.videoPlayer.onended = null;
+        this.videoPlayer.onloadedmetadata = null;
+        this.videoPlayer.oncanplay = null;
+        this.videoPlayer.onstalled = null;
+        this.videoPlayer.ontimeupdate = null;
+        
+        // Get media path from config
+        try {
+            const response = await fetch('/api/media-path');
+            const data = await response.json();
+            const technicalDifficultiesPath = `/api/static-video?path=${encodeURIComponent(data.mediaPath + '/lib/technical-difficulties.mp4')}`;
+            
+            // Play technical difficulties video
+            this.videoPlayer.src = technicalDifficultiesPath;
+            this.videoPlayer.loop = false;
+            
+            // Show overlay immediately
+            this.channelName.textContent = 'Technical Difficulties';
+            this.nowPlaying.innerHTML = `We're experiencing technical difficulties.<br>Please stand by...`;
+            this.channelOverlay.classList.add('visible');
+            
+            try {
+                await this.videoPlayer.play();
+                console.log('Technical difficulties video playing');
+            } catch (playError) {
+                console.error('Failed to play technical difficulties video:', playError);
+                // Skip video, go straight to retry
+                this.retryAfterTechnicalDifficulties();
+                return;
+            }
+            
+            // After technical difficulties video ends, retry loading the channel
+            this.videoPlayer.onended = () => {
+                this.retryAfterTechnicalDifficulties();
+            };
+        } catch (error) {
+            console.error('Failed to load technical difficulties video:', error);
+            this.retryAfterTechnicalDifficulties();
+        }
+    }
+    
+    retryAfterTechnicalDifficulties() {
+        this.channelOverlay.classList.remove('visible');
+        this.inTechnicalDifficulties = false;
+        
+        console.log('Retrying channel load after technical difficulties...');
+        setTimeout(async () => {
+            await this.loadChannelStream(this.currentChannel);
+            // Restart sync intervals
+            this.startSync();
+        }, 2000);
     }
 
     async jumpToEntry(entry) {

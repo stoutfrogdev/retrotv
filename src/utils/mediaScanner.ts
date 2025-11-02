@@ -117,7 +117,7 @@ export class MediaScanner {
     const tvPattern1 = /(.+?)\.S(\d+)E(\d+)/i;
     const tvPattern2 = /(.+?)\.(\d+)x(\d+)/i;
     
-    let match = filename.match(tvPattern1) || filename.match(tvPattern2);
+    const match = filename.match(tvPattern1) || filename.match(tvPattern2);
     if (match) {
       metadata.series = match[1].replace(/\./g, ' ').trim();
       metadata.season = parseInt(match[2], 10);

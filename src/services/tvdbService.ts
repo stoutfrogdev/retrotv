@@ -3,14 +3,6 @@ import * as dotenv from 'dotenv';
 
 dotenv.config();
 
-interface TVDBSeriesSearchResult {
-  id: number;
-  name: string;
-  slug: string;
-  overview: string;
-  year: string;
-}
-
 interface TVDBEpisode {
   id: number;
   name: string;

@@ -150,6 +150,7 @@ export class RetroTVServer {
           startTime: currentEntry.startTime,
           endTime: currentEntry.endTime,
           isCommercial: currentEntry.isCommercial,
+          mediaFile: currentEntry.mediaFile, // Include full mediaFile object
         },
         seekPosition,
         serverTime: new Date().toISOString(),
@@ -188,6 +189,68 @@ export class RetroTVServer {
       
       this.playerService.clearDevTime(channelId);
       res.json({ success: true });
+    });
+
+    // Get media path
+    this.app.get('/api/media-path', (req: Request, res: Response) => {
+      res.json({ mediaPath: this.config.mediaPath });
+    });
+    
+    // Serve static video files (for technical difficulties, etc.)
+    this.app.get('/api/static-video', (req: Request, res: Response) => {
+      const videoPath = req.query.path as string;
+      
+      if (!videoPath) {
+        res.status(400).json({ error: 'Path parameter required' });
+        return;
+      }
+      
+      if (!fs.existsSync(videoPath)) {
+        res.status(404).json({ error: 'Video file not found' });
+        return;
+      }
+      
+      const stat = fs.statSync(videoPath);
+      const fileSize = stat.size;
+      const range = req.headers.range;
+      
+      if (range) {
+        const parts = range.replace(/bytes=/, '').split('-');
+        let start = parseInt(parts[0], 10);
+        let end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+        
+        if (start >= fileSize) {
+          res.status(416).send('Requested range not satisfiable');
+          return;
+        }
+        
+        if (end >= fileSize) {
+          end = fileSize - 1;
+        }
+        
+        if (start > end) {
+          start = end;
+        }
+        
+        const chunksize = (end - start) + 1;
+        const file = fs.createReadStream(videoPath, { start, end });
+        const head = {
+          'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+          'Accept-Ranges': 'bytes',
+          'Content-Length': chunksize,
+          'Content-Type': 'video/mp4',
+        };
+        
+        res.writeHead(206, head);
+        file.pipe(res);
+      } else {
+        const head = {
+          'Content-Length': fileSize,
+          'Content-Type': 'video/mp4',
+        };
+        res.writeHead(200, head);
+        fs.createReadStream(videoPath).pipe(res);
+      }
     });
 
     // Health check
