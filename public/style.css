@@ -1,0 +1,220 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Courier New', monospace;
+    background: #000;
+    color: #eee;
+    overflow: hidden;
+}
+
+.fullscreen-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #000;
+    z-index: 1;
+}
+
+video {
+    width: 100%;
+    height: 100%;
+    display: block;
+    /* object-fit: cover; Fill screen, crop if needed */
+    background: #000;
+}
+
+.channel-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, transparent 100%);
+    padding: 20px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.channel-overlay.visible {
+    opacity: 1;
+}
+
+.channel-info h2 {
+    font-size: 2em;
+    color: #00ff88;
+    text-shadow: 0 0 10px #00ff88;
+    margin-bottom: 10px;
+}
+
+#nowPlaying {
+    font-size: 1.2em;
+    color: #fff;
+}
+
+.loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    z-index: 10;
+}
+
+.loading-screen.visible {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.loading-text {
+    font-size: 2em;
+    color: #00ff88;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+/* Debug Panel */
+.debug-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 350px;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.95);
+    border-left: 2px solid #00ff88;
+    z-index: 100;
+    display: none; /* Hidden by default, shown in dev mode */
+    flex-direction: column;
+    transition: transform 0.3s ease;
+}
+
+.debug-panel.visible {
+    display: flex;
+}
+
+.debug-panel.collapsed {
+    transform: translateX(310px);
+}
+
+.debug-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid #00ff88;
+    background: rgba(0, 255, 136, 0.1);
+}
+
+.debug-header h3 {
+    color: #00ff88;
+    margin: 0;
+    font-size: 1.2em;
+}
+
+.debug-toggle {
+    background: transparent;
+    border: 1px solid #00ff88;
+    color: #00ff88;
+    padding: 5px 10px;
+    cursor: pointer;
+    border-radius: 3px;
+    font-size: 1em;
+    transition: all 0.2s;
+}
+
+.debug-toggle:hover {
+    background: rgba(0, 255, 136, 0.2);
+}
+
+.debug-panel.collapsed .debug-toggle {
+    transform: rotate(180deg);
+}
+
+.debug-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px;
+}
+
+.debug-section {
+    margin-bottom: 25px;
+}
+
+.debug-section h4 {
+    color: #00ff88;
+    margin-bottom: 10px;
+    font-size: 1em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.debug-section > div {
+    color: #ccc;
+    font-size: 0.85em;
+    line-height: 1.6;
+}
+
+.schedule-item {
+    background: rgba(45, 45, 68, 0.6);
+    padding: 10px;
+    margin-bottom: 8px;
+    border-radius: 5px;
+    border-left: 3px solid #555;
+    transition: all 0.2s;
+}
+
+.schedule-item:hover {
+    background: rgba(0, 255, 136, 0.15);
+    border-left-color: #00ff88;
+    transform: translateX(5px);
+}
+
+.schedule-item.current {
+    border-left-color: #00ff88;
+    background: rgba(0, 255, 136, 0.1);
+}
+
+.schedule-item.commercial {
+    border-left-color: #ff6b6b;
+    opacity: 0.7;
+}
+
+.schedule-item.commercial:hover {
+    border-left-color: #ff6b6b;
+    opacity: 1;
+}
+
+.schedule-time {
+    color: #00ff88;
+    font-size: 0.85em;
+    margin-bottom: 4px;
+}
+
+.schedule-title {
+    color: #fff;
+    font-size: 0.9em;
+    font-weight: bold;
+}
+
+.schedule-duration {
+    color: #aaa;
+    font-size: 0.75em;
+    margin-top: 3px;
+}

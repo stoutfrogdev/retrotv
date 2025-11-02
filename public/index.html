@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RetroTV</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="fullscreen-container">
+        <video id="videoPlayer" autoplay playsinline></video>
+        
+        <div id="channelOverlay" class="channel-overlay">
+            <div class="channel-info">
+                <h2 id="channelName"></h2>
+                <div id="nowPlaying"></div>
+            </div>
+        </div>
+        
+        <div id="loadingScreen" class="loading-screen">
+            <div class="loading-text">Loading...</div>
+        </div>
+    </div>
+
+    <!-- Debug panel (only shown in dev mode) -->
+    <div class="debug-panel" id="debugPanel">
+        <div class="debug-header">
+            <h3>Debug</h3>
+            <button id="debugToggle" class="debug-toggle">◀</button>
+        </div>
+        <div class="debug-content">
+            <div class="debug-section">
+                <h4>Current</h4>
+                <div id="debugCurrent">No data</div>
+            </div>
+            <div class="debug-section">
+                <h4>Upcoming</h4>
+                <div id="debugSchedule">No schedule</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+[Unit]
+Description=RetroTV Server
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/retrotv
+ExecStart=/usr/bin/npm start
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,74 @@
+{
+  "mediaPath": "/mnt/media",
+  "schedulePath": "./schedules",
+  "port": 3000,
+  "defaultChannel": "80s-tv",
+  "commercialInterval": 15,
+  "commercialDuration": 2,
+  "channels": [
+    {
+      "id": "80s-tv",
+      "name": "80s TV",
+      "decade": "80s",
+      "type": "tv",
+      "mediaFolder": "80s/tv"
+    },
+    {
+      "id": "80s-music",
+      "name": "80s Music",
+      "decade": "80s",
+      "type": "music",
+      "mediaFolder": "80s/music"
+    },
+    {
+      "id": "80s-movies",
+      "name": "80s Movies",
+      "decade": "80s",
+      "type": "movies",
+      "mediaFolder": "80s/movies"
+    },
+    {
+      "id": "90s-tv",
+      "name": "90s TV",
+      "decade": "90s",
+      "type": "tv",
+      "mediaFolder": "90s/tv"
+    },
+    {
+      "id": "90s-music",
+      "name": "90s Music",
+      "decade": "90s",
+      "type": "music",
+      "mediaFolder": "90s/music"
+    },
+    {
+      "id": "90s-movies",
+      "name": "90s Movies",
+      "decade": "90s",
+      "type": "movies",
+      "mediaFolder": "90s/movies"
+    }
+  ],
+  "seasonalContent": {
+    "halloween": {
+      "start": "10-01",
+      "end": "10-31",
+      "weight": 3
+    },
+    "christmas": {
+      "start": "12-01",
+      "end": "12-25",
+      "weight": 3
+    },
+    "thanksgiving": {
+      "start": "11-15",
+      "end": "11-30",
+      "weight": 2
+    },
+    "valentines": {
+      "start": "02-10",
+      "end": "02-14",
+      "weight": 2
+    }
+  }
+}
